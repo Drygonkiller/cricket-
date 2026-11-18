@@ -1,0 +1,36 @@
+name: Export stadium with Blender LTS
+on:
+  push:
+    branches: [build/super-over-smash-portable]
+permissions:
+  contents: write
+jobs:
+  export:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Download Blender 4.5.3 LTS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL --retry 2 --max-time 200 -O https://download.blender.org/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz
+          curl -fsSL --retry 2 -O https://download.blender.org/release/Blender4.5/blender-4.5.3.sha256
+          grep 'blender-4.5.3-linux-x64.tar.xz$' blender-4.5.3.sha256 | sha256sum -c -
+          tar -xf blender-4.5.3-linux-x64.tar.xz
+      - name: Build assets from scratch
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/blender-4.5.3-linux-x64/blender" --background --factory-startup --python-exit-code 1 --threads 4 --python blender/build_stadium.py | tee "$RUNNER_TEMP/stadium.log"
+          grep -E '^(TRIANGLES|TOTAL_TRIANGLES|MATERIALS|OUTPUT) ' "$RUNNER_TEMP/stadium.log" > blender/stadium-build-report.txt
+          test "$(head -c 4 assets/cricket_stadium.glb)" = "glTF"
+      - name: Save exported assets on the build branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/cricket_stadium.blend assets/cricket_stadium.glb renders/stadium_preview.png blender/stadium-build-report.txt
+          git commit -m 'Render and export the Blender stadium'
+          git push origin HEAD:build/super-over-smash-portable
