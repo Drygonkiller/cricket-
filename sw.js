@@ -1,7 +1,7 @@
 "use strict";
 
 const CACHE_PREFIX = "super-over-smash:";
-const CACHE_NAME = CACHE_PREFIX + "v4";
+const CACHE_NAME = CACHE_PREFIX + "v5";
 const APP_SHELL = ["./", "./index.html", "./styles.css", "./game-logic.js", "./game.js", "./manifest.webmanifest"];
 const SHELL_URLS = new Set(APP_SHELL.map((path) => new URL(path, self.registration.scope).href));
 

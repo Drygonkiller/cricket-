@@ -34,6 +34,8 @@ Quick halves the AI ticker and feedback pauses. Quick, sound, your high score, a
 
 Choose a mode, overs, difficulty, team, and Quick at home. **Play** opens the 3D stadium. In Chase, bat to beat the AI's target. In Defend, bat first, then bowl while the AI chases. Use the direction buttons, arrow keys, or the left, centre, or right third of the pitch to aim. Tap **HIT** or press **Space** near the gold line. When bowling, tap **BOWL** or press **Space** as the meter reaches green.
 
+Use **3D lighting** to pick Day or Dusk. You can also switch from the scoreboard. The batting timing bar marks perfect in green and good in yellow, then holds your strike timing during feedback. Hard deliveries reach the crease faster. Add `fps=1` to the 3D page's query string to show the measured frame rate during play.
+
 **Play 2D (light version)** starts the same setup in 2D. Both versions share the sound setting, high score, and five-match history. Completed stadium matches are marked **3D** in the history.
 
 The 3D page uses **Three.js 0.180.0** and its **GLTFLoader 0.180.0** from jsDelivr. It needs WebGL 2 and a network connection to load those modules. The 2D game keeps its existing offline cache and does not load Three.js.

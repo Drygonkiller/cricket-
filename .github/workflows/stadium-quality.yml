@@ -1,0 +1,16 @@
+name: Verify stadium quality pass
+on:
+  push:
+    branches: [build/all-3d-quality-qa]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Verify the existing game and stadium tests
+        run: node --test tests/game-logic.test.js tests/stadium-asset.test.js
+      - name: Play Chase and Defend in Chromium
+        run: node browser-check.mjs

@@ -86,6 +86,12 @@
             <label><input type="checkbox" id="quick" checked> Quick</label>
             <button class="secondary sound-toggle" data-sound type="button" aria-pressed="true">Sound on</button>
           </div>
+          <label class="stadium-lighting">3D lighting
+            <select id="stadium-lighting">
+              <option>Day</option>
+              <option>Dusk</option>
+            </select>
+          </label>
           <button class="primary start" type="submit">Play <span aria-hidden="true">→</span></button>
           <a class="secondary play-3d" id="play-2d" href="./?play=2d">Play 2D (light version)</a>
         </form>
@@ -177,6 +183,14 @@
   <script>
     const matchSetup = document.getElementById("setup");
     const lightLink = document.getElementById("play-2d");
+    const stadiumLighting = document.getElementById("stadium-lighting");
+    const lightingKey = "super-over-smash:lighting-3d";
+    try {
+      stadiumLighting.value = JSON.parse(localStorage.getItem(lightingKey)) === "Dusk" ? "Dusk" : "Day";
+    } catch {}
+    stadiumLighting.addEventListener("change", () => {
+      try { localStorage.setItem(lightingKey, JSON.stringify(stadiumLighting.value)); } catch {}
+    });
     let startingLight = false;
     const choicesToPass = ["mode", "overs", "difficulty", "team"];
     function startLight() {
@@ -191,6 +205,7 @@
       const query = new URLSearchParams();
       for (const name of choicesToPass) query.set(name, choices.get(name));
       query.set("quick", document.getElementById("quick").checked ? "1" : "0");
+      query.set("lighting", stadiumLighting.value);
       location.assign("./game-3d.html?" + query);
     }, true);
     lightLink.addEventListener("click", (event) => {

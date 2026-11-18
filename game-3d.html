@@ -39,6 +39,12 @@
     <div><a href="./" class="three-back">← Match setup</a><h1>Super Over Smash <span>3D</span></h1></div>
     <div class="three-settings">
       <p id="match-settings"></p>
+      <label class="three-lighting">Lighting
+        <select id="lighting" aria-label="Stadium lighting">
+          <option>Day</option>
+          <option>Dusk</option>
+        </select>
+      </label>
       <button id="sound-toggle" class="secondary sound-toggle" type="button" aria-pressed="true">Sound on</button>
     </div>
   </header>
@@ -50,8 +56,15 @@
       <div class="score-need"><dt>Needed</dt><dd id="needed">—</dd></div>
       <div><dt>Balls left</dt><dd id="balls-left">—</dd></div>
     </dl>
+    <div id="batting-timing" class="batting-timing" hidden>
+      <div class="timing-label"><span>Batting timing</span><span id="timing-value">Ready</span></div>
+      <div class="meter-track" aria-label="Batting timing. Yellow is good and green is perfect.">
+        <span class="timing-good"></span><span class="timing-perfect"></span><i class="timing-marker"></i>
+      </div>
+    </div>
     <section class="three-stage" aria-label="3D cricket stadium">
       <canvas id="stadium" tabindex="0" aria-label="Cricket pitch. Tap left for Cover, middle for Straight, or right for Leg."></canvas>
+      <output id="frame-rate" class="frame-rate" hidden></output>
       <div id="loading" class="three-overlay" role="status">
         <h2 id="load-title">Loading the stadium</h2>
         <p id="load-message">Loading the stadium and Three.js over the internet.</p>
@@ -78,6 +91,7 @@
         </div>
       </div>
       <div id="impact" class="three-impact" aria-hidden="true" hidden></div>
+      <div id="win-confetti" class="win-confetti" aria-hidden="true" hidden></div>
     </section>
     <div id="batting" hidden>
       <div id="bowling-meter" class="bowl-meter" aria-label="Bowling timing meter. Green is perfect and yellow is good." hidden>

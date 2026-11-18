@@ -82,6 +82,8 @@ a { color: inherit; }
   align-items: start;
 }
 .home-feature, .home-settings { display: grid; gap: 16px; min-width: 0; }
+.stadium-lighting { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: .83rem; font-weight: 700; }
+.stadium-lighting select { background: #172e2a; color: #e1ece7; border: 1px solid var(--edge); border-radius: 8px; min-width: 88px; padding: 7px 8px; font: inherit; }
 .hero, .card, .how-to, .scoreboard, .arena {
   border: 1px solid var(--edge);
   border-radius: 18px;
