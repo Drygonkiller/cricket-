@@ -41,6 +41,10 @@ try {
   const cdp = (cmdName, params) => cmd("/goog/cdp/execute", { cmd: cmdName, params });
   const navigate = path => cmd("/url", { url: root + path });
   const txt = id => exec("return document.getElementById(arguments[0])?.textContent", id);
+  const formClick = async selector => {
+    const element = await cmd("/element", { using: "css selector", value: selector });
+    await cmd("/element/" + Object.values(element)[0] + "/click", {});
+  };
   const rect = selector => exec(
     "const e=document.querySelector(arguments[0]); e.scrollIntoView({block:'center'}); const r=e.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2,w:r.width};",
     selector,
@@ -82,12 +86,13 @@ try {
     };` });
   await navigate("/");
   // The home form link has to preserve the selected overs, difficulty and team.
-  await click('label:has(input[name="overs"][value="1"])');
-  await click('label:has(input[name="team"][value="Australia"])');
+  await formClick('label:has(input[name="overs"][value="1"])');
+  await formClick('label:has(input[name="team"][value="Australia"])');
+  assert.equal(await exec('return document.querySelector("input[name=team]:checked").value'), "Australia");
   const stadium = () => waitFor(() => exec(
     'const e=document.querySelector("#loading"); return e?.hidden || (document.querySelector("#load-title")?.textContent==="3D stadium unavailable" ? "failed" : false);'),
   "3D stadium", 35000).then(status => assert.notEqual(status, "failed"));
-  await click('#setup button[type="submit"]');
+  await formClick('#setup button[type="submit"]');
   await stadium();
   assert.match(await exec('return location.search'), /mode=Chase&overs=1&difficulty=Normal&team=Australia&quick=1/);
   assert.equal(await txt("match-settings"), "Chase · Australia · 1 over · Normal");
@@ -134,10 +139,10 @@ try {
 
   await navigate("/");
   assert.match(await txt("match-history"), /Chase 3D/);
-  await touch('label:has(input[name="mode"][value="Defend"])');
-  await touch('label:has(input[name="overs"][value="1"])');
-  await touch("#quick");
-  await touch('#setup button[type="submit"]');
+  await formClick('label:has(input[name="mode"][value="Defend"])');
+  await formClick('label:has(input[name="overs"][value="1"])');
+  await formClick("#quick");
+  await formClick('#setup button[type="submit"]');
   await stadium();
   assert.match(await exec('return location.search'), /mode=Defend&overs=1&difficulty=Normal&team=Nepal&quick=0/);
   assert.equal(await txt("action-label"), "HIT");
