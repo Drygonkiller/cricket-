@@ -122,7 +122,7 @@ def stadium():
     # Turf uses alternating concentric mowing bands and a filled centre.
     bpy.ops.mesh.primitive_circle_add(vertices=SEGMENTS, radius=1, fill_type="NGON")
     centre = paint(bpy.context.object, "Turf_Centre", "Grass")
-    centre.scale = (7.6, 9.2, 1)
+    centre.scale = (7.5, 9, 1)
     turf = [(25 * t, 30 * t, 0) for t in (.30, .44, .58, .72, .86, 1)]
     oval_mesh("Turf_Mowing_Bands", turf, ["Grass", "Grass Cut"], lambda c, i: c % 2)
     oval_mesh("Perimeter_Concourse", [(25, 30, -.025), (27.6, 32.6, -.025), (28, 33, .12)],
@@ -262,7 +262,7 @@ def presentation(scene):
     light("Warm stadium rim", (0, 36, 23), (1, .73, .47), 11500, 32)
     camera = bpy.data.cameras.new("Broadcast stadium camera")
     camera.type = "ORTHO"
-    camera.ortho_scale = 108
+    camera.ortho_scale = 112
     cam = bpy.data.objects.new(camera.name, camera)
     bpy.context.collection.objects.link(cam)
     cam.location = (45, -62, 62)
