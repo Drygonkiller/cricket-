@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101d22">
+  <title>Super Over Smash 3D</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./game-3d.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script defer src="./game-logic.js"></script>
+  <script type="module">
+    import("./game-3d.js").then(({ boot }) => boot()).catch(error => {
+      document.getElementById("loading").hidden = false;
+      document.getElementById("ai-panel").hidden = true;
+      document.getElementById("load-title").textContent = "3D stadium unavailable";
+      document.getElementById("load-message").textContent =
+        "The stadium needs WebGL 2 and its files to load. You can still play the 2D game.";
+      console.warn("The 3D game could not start.", error);
+    });
+  </script>
+</head>
+<body class="three-page">
+  <header class="three-header">
+    <div><a href="./" class="three-back">← Back to 2D</a><h1>Super Over Smash <span>3D</span></h1></div>
+    <p id="match-settings"></p>
+  </header>
+  <main class="three-match">
+    <dl class="scoreboard three-score" aria-label="Live scoreboard">
+      <div class="score-main"><dt id="score-label">AI score</dt><dd id="score">0/0</dd></div>
+      <div><dt>Overs</dt><dd id="overs">0.0</dd></div>
+      <div><dt>Target</dt><dd id="target">—</dd></div>
+      <div class="score-need"><dt>Needed</dt><dd id="needed">—</dd></div>
+      <div><dt>Balls left</dt><dd id="balls-left">—</dd></div>
+    </dl>
+    <section class="three-stage" aria-label="3D cricket stadium">
+      <canvas id="stadium" tabindex="0" aria-label="Cricket pitch. Tap left for Cover, middle for Straight, or right for Leg."></canvas>
+      <div id="loading" class="three-overlay" role="status">
+        <h2 id="load-title">Loading the stadium</h2>
+        <p id="load-message">Loading the stadium and Three.js over the internet.</p>
+        <a class="secondary" href="./">Play in 2D</a>
+      </div>
+      <div id="ai-panel" class="three-overlay" hidden>
+        <h2 id="ai-title" tabindex="-1">AI innings</h2>
+        <p id="ai-line" aria-live="polite"></p>
+        <div class="three-actions">
+          <button id="skip" class="secondary" type="button">Skip AI innings</button>
+          <button id="start-chase" class="primary" type="button" hidden>Start chase →</button>
+        </div>
+      </div>
+      <div id="result" class="three-overlay" hidden>
+        <h2 id="result-title" tabindex="-1"></h2>
+        <p id="result-score"></p>
+        <div class="three-actions">
+          <button id="replay" class="primary" type="button">Play Again</button>
+          <a href="./" class="secondary">Home</a>
+        </div>
+      </div>
+      <div id="impact" class="three-impact" aria-hidden="true" hidden></div>
+    </section>
+    <div id="batting" hidden>
+      <div class="three-readout">
+        <p id="commentary" class="commentary" role="status"></p>
+        <span id="shot-timing">Wait for the ball</span>
+      </div>
+      <div class="bat-controls">
+        <div class="shot-controls" role="group" aria-label="Shot direction">
+          <button type="button" data-shot="off" aria-pressed="false">↖ Cover</button>
+          <button type="button" data-shot="straight" aria-pressed="true">↑ Straight</button>
+          <button type="button" data-shot="leg" aria-pressed="false">↗ Leg</button>
+        </div>
+        <button id="hit" type="button" class="primary hit" disabled>HIT <kbd>Space</kbd></button>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

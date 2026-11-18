@@ -87,6 +87,7 @@
             <button class="secondary sound-toggle" data-sound type="button" aria-pressed="true">Sound on</button>
           </div>
           <button class="primary start" type="submit">Start Match <span aria-hidden="true">→</span></button>
+          <a class="secondary play-3d" id="play-3d" href="./game-3d.html">Play 3D <span aria-hidden="true">→</span></a>
         </form>
         <section class="card history" aria-label="Match records">
           <dl class="records"><div><dt>High score</dt><dd id="high-score">—</dd></div></dl>
@@ -173,5 +174,18 @@
       </section>
     </section>
   </main>
+  <script>
+    const matchSetup = document.getElementById("setup");
+    const playThree = document.getElementById("play-3d");
+    function updateThreeLink() {
+      const choices = new FormData(matchSetup);
+      const query = new URLSearchParams();
+      for (const name of ["overs", "difficulty", "team"]) query.set(name, choices.get(name));
+      playThree.href = "./game-3d.html?" + query;
+    }
+    matchSetup.addEventListener("change", updateThreeLink);
+    window.addEventListener("pageshow", updateThreeLink);
+    updateThreeLink();
+  </script>
 </body>
 </html>
