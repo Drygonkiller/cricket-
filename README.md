@@ -30,12 +30,28 @@ During bowling, choose Off, Straight, or Leg with the same buttons, arrow keys, 
 
 Quick halves the AI ticker and feedback pauses. Quick, sound, your high score, and your five most recent matches are stored on the current device.
 
+## Play 3D
+
+Choose overs, difficulty, and team at home, then select **Play 3D** to start a batting chase in the stadium. Aim with the three shot buttons, arrow keys, or a tap on the left, centre, or right third of the pitch. Tap **HIT** or press **Space** near the gold line. 3D uses the same scoring and timing windows as 2D.
+
+The 3D page uses **Three.js 0.180.0** and its **GLTFLoader 0.180.0** from jsDelivr. It needs WebGL 2 and a network connection to load those modules. The 2D game keeps its existing offline cache and does not load Three.js.
+
+### Build the stadium
+
+Run with Blender 4.x from the repository root.
+
+```sh
+blender --background --factory-startup --python-exit-code 1 --python blender/build_stadium.py
+```
+
+The script saves the editable blend, Y-up GLB, and broadcast preview at `assets/cricket_stadium.blend`, `assets/cricket_stadium.glb`, and `renders/stadium_preview.png`. See [the build report](blender/stadium-build-report.txt) for triangle counts, material names, and file sizes.
+
 ## Tests
 
 Run with Node.js 18 or newer:
 
 ```sh
-node --test tests/game-logic.test.js
+node --test tests/game-logic.test.js tests/stadium-asset.test.js
 ```
 
 ## Deploy to Vercel

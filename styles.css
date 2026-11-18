@@ -141,6 +141,7 @@ fieldset { padding: 0; border: 0; margin: 0 0 17px; min-width: 0; }
 legend { padding: 0; margin-bottom: 7px; color: var(--muted); }
 .option-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
 .mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.play-3d { width: 100%; margin-top: 8px; text-decoration: none; }
 .match-options, .score-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .match-options label { display: flex; align-items: center; gap: 6px; font-weight: 700; }
 .match-options input { accent-color: #c9f370; inline-size: 18px; block-size: 18px; }

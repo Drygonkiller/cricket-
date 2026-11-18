@@ -1,0 +1,27 @@
+.three-page {
+  width: min(100% - 24px, 1040px);
+  margin: 0 auto;
+  background: radial-gradient(ellipse at top, #1d3736, #101d22 65%) #101d22;
+}
+.three-header { display: flex; align-items: end; justify-content: space-between; gap: 8px 24px; flex-wrap: wrap; padding: 16px 0 13px; }
+.three-header h1 { font-size: clamp(1.45rem, 5vw, 2.65rem); margin: 4px 0 0; line-height: 1.05; }
+.three-header h1 span { color: var(--lime); }
+.three-header p, .three-back { color: #b7cfc7; font-size: .82rem; margin: 0; }
+.three-score { position: static; grid-template-columns: 1.25fr repeat(4, minmax(0, 1fr)); margin-bottom: 10px; }
+.three-stage { position: relative; isolation: isolate; overflow: hidden; border-radius: 14px; border: 1px solid #3d5854; height: clamp(245px, 56svh, 530px); background: #21383c; }
+#stadium { width: 100%; height: 100%; display: block; touch-action: none; }
+.three-overlay { position: absolute; inset: 0; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 18px; background: #0b191bba; }
+.three-overlay h2 { margin: 0; font-size: clamp(1.5rem, 5vw, 2.5rem); }
+.three-overlay > p { margin: 0; color: #e1ece7; max-width: 36ch; }
+.three-overlay a, .three-actions a { display: inline-flex; align-items: center; text-decoration: none; min-height: 43px; }
+.three-actions { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.three-impact { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); color: #e8ffb5; background: #0b191be8; padding: 8px 15px; border-radius: 8px; font-size: clamp(1.15rem, 4vw, 2rem); font-weight: 900; white-space: nowrap; pointer-events: none; }
+.three-readout { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 3px 0; }
+.three-readout .commentary { margin: 0; }
+#shot-timing { color: #c9f370; text-align: right; font-weight: 800; font-size: .75rem; flex: none; }
+.three-page .bat-controls { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+@media (max-width: 600px) {
+  .three-header { padding-top: 9px; }
+  .three-stage { height: clamp(228px, 48svh, 430px); }
+  .three-readout .commentary { font-size: .76rem; }
+}

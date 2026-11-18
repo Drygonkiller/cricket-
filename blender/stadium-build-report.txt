@@ -1,0 +1,30 @@
+TRIANGLES Ball_Body: 80
+TRIANGLES Ball_Seam: 160
+TRIANGLES Boundary_Rope: 864
+TRIANGLES Cricket_Bat: 84
+TRIANGLES Floodlight_1_Frame: 284
+TRIANGLES Floodlight_1_Lenses: 180
+TRIANGLES Floodlight_2_Frame: 284
+TRIANGLES Floodlight_2_Lenses: 180
+TRIANGLES Floodlight_3_Frame: 284
+TRIANGLES Floodlight_3_Lenses: 180
+TRIANGLES Floodlight_4_Frame: 284
+TRIANGLES Floodlight_4_Lenses: 180
+TRIANGLES Ground_Plinth: 44
+TRIANGLES Perimeter_Concourse: 288
+TRIANGLES Pitch: 44
+TRIANGLES Pitch_Creases: 108
+TRIANGLES Player_Batsman_Mesh: 732
+TRIANGLES Player_Bowler_Mesh: 644
+TRIANGLES Sightscreen: 88
+TRIANGLES Stands_Ring: 3456
+TRIANGLES Stumps_Batsman: 140
+TRIANGLES Stumps_Bowler: 140
+TRIANGLES Turf_Centre: 70
+TRIANGLES Turf_Mowing_Bands: 720
+TRIANGLES Upper_Fascia: 432
+TOTAL_TRIANGLES 9950
+MATERIALS Ash, Ball Red, Blue Seats, Chalk, Concrete, Coral Jersey, Gold, Grass, Grass Cut, Lamp Ivory, Mint Jersey, Navy, Pad, Pitch Clay, Skin, Stand Shadow, Steel, Teal Seats
+OUTPUT assets/cricket_stadium.blend 200935 bytes
+OUTPUT assets/cricket_stadium.glb 494452 bytes
+OUTPUT renders/stadium_preview.png 1797571 bytes
