@@ -89,7 +89,8 @@ try {
   await cdp("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 2, mobile: true });
   await cdp("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 1 });
   await touch("#stadium", 1);
-  assert.equal(await exec('return document.querySelector('[data-shot="leg"]').getAttribute("aria-pressed")'), "true");
+  assert.equal(await exec('return document.querySelector(arguments[0]).getAttribute("aria-pressed")',
+    '[data-shot="leg"]'), "true");
   await strike();
   await touch("#hit");
   await settled();
