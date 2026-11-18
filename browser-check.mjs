@@ -200,6 +200,9 @@ try {
   await green();
   await touch("#hit");
   await settled();
+  await touch("#sound-toggle");
+  assert.equal(await txt("sound-toggle"), "Sound off");
+  assert.equal(await exec('return localStorage.getItem("super-over-smash:muted")'), "true");
   for (let ball = 3; ball < 6; ball++) {
     await green();
     await touch("#hit");
@@ -211,8 +214,7 @@ try {
   assert.match(await txt("best-ball"), /Best ball: WICKET — Perfect release, straight/);
   console.log("BROWSER DEFEND", await txt("result-title"), await txt("result-score"), await txt("best-ball"));
   console.log("BROWSER AUDIO click, bat and delivery events; mute and master gain verified");
-  await touch("#sound-toggle");
-  await touch('#result a[href="./"]');
+  await formClick('#result a[href="./"]');
   await waitFor(() => exec('return Boolean(document.querySelector("#match-history"))'), "home history");
   assert.match(await txt("match-history"), /Defend 3D.*Chase 3D/s);
   assert.match(await txt("high-score"), /[1-9]\d* runs/);
@@ -225,7 +227,7 @@ try {
   await navigate("/game-3d.html?mode=Defend&overs=1&difficulty=Easy&team=India");
   await waitFor(async () => await txt("load-title") === "3D stadium unavailable", "GLB fallback", 35000);
   assert.equal(await exec('return document.querySelector("#loading a").textContent.trim()'), "Play 2D (light version)");
-  await touch("#loading a");
+  await formClick("#loading a");
   await waitFor(() => exec('return document.querySelector("#match")?.hidden === false'), "2D fallback match");
   assert.match(await txt("match-label"), /India.*Easy/);
   console.log("BROWSER FALLBACK clear message and one-tap Defend 2D start");
