@@ -1,0 +1,25 @@
+name: Verify Super Over Smash
+on:
+  push:
+    branches: [build/all-3d-qa]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Check public HTTP responses
+        run: |
+          set -eu
+          for path in / /game-3d.html /assets/cricket_stadium.glb; do
+            status="$(curl --retry 2 --max-time 15 -sS -L -o /dev/null -w '%{http_code}' "https://super-over-smash.vercel.app${path}")"
+            printf 'PRODUCTION %s HTTP %s\n' "$path" "$status"
+            test "$status" = 200
+          done
+      - name: Run existing game and stadium tests
+        run: node --test tests/game-logic.test.js tests/stadium-asset.test.js
+      - name: Exercise the game in Chromium
+        run: |
+          if [ -f browser-check.mjs ]; then node browser-check.mjs; fi
