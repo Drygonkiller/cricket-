@@ -18,6 +18,16 @@ jobs:
             printf 'PRODUCTION %s HTTP %s\n' "$path" "$status"
             test "$status" = 200
           done
+      - name: Check the all-3D release contents
+        run: |
+          set -eu
+          curl --retry 2 --max-time 15 -fsSL 'https://super-over-smash.vercel.app/' -o /tmp/sos-home.html
+          curl --retry 2 --max-time 15 -fsSL 'https://super-over-smash.vercel.app/game-3d.html' -o /tmp/sos-3d.html
+          curl --retry 2 --max-time 15 -fsSL 'https://super-over-smash.vercel.app/game-3d.js' -o /tmp/sos-3d.js
+          grep -F 'Play 2D (light version)' /tmp/sos-home.html
+          grep -F 'id="bowling-meter"' /tmp/sos-3d.html
+          grep -F 'logic.bowlDelivery' /tmp/sos-3d.js
+          echo 'PRODUCTION All-3D release markers verified'
       - name: Run existing game and stadium tests
         run: node --test tests/game-logic.test.js tests/stadium-asset.test.js
       - name: Exercise the game in Chromium
