@@ -3,7 +3,58 @@ const assert = require("node:assert/strict");
 const {
   EXTRA_CHANCE, EDGE_OUT_CHANCE, classifyTiming, scoreShot, oversToBalls, ballsToOvers, newInnings,
   recordBall, inningsEnded, matchResult, chaseInfo, rollExtra, simulateInnings,
+  bowlDelivery, defendResult, addMatchToHistory, pickAiShot,
 } = require("../game-logic.js");
+
+test("perfect bowling can take a wicket or earn a dot when the AI mistimes", () => {
+  const delivery = { timing: "perfect", line: "straight", difficulty: "Normal",
+    aiShot: { direction: "leg", timing: "mistimed" } };
+  assert.equal(bowlDelivery({ ...delivery, random: () => .05 }), "OUT");
+  assert.equal(bowlDelivery({ ...delivery, random: () => .90 }), 0);
+});
+
+test("good bowling limits runs and a missed release is easy to score from", () => {
+  const delivery = { line: "leg", difficulty: "Normal", aiShot: { direction: "leg", timing: "perfect" },
+    random: () => .75 };
+  assert.equal(bowlDelivery({ ...delivery, timing: "good" }), 2);
+  assert.equal(bowlDelivery({ ...delivery, timing: "missed" }), 6);
+  assert.equal(bowlDelivery({ ...delivery, aiShot: { direction: "off", timing: "mistimed" },
+    timing: "missed" }), 2);
+});
+
+test("an extra in the bowling innings scores a run without consuming a ball", () => {
+  const before = { runs: 9, balls: 5, wickets: 2 };
+  for (const extra of ["wide", "no-ball"]) {
+    const after = recordBall(before, extra);
+    assert.deepEqual(after, { runs: 10, balls: 5, wickets: 2 });
+    assert.equal(inningsEnded(after, 1, 11), false);
+    assert.equal(inningsEnded(after, 1, 10), true);
+  }
+});
+
+test("Defend awards a win below the tied score and a loss at the target", () => {
+  for (const [runs, result] of [[16, "Win"], [17, "Tie"], [18, "Lose"], [19, "Lose"]]) {
+    assert.equal(defendResult(runs, 18), result);
+  }
+});
+
+test("saving six matches keeps the latest five in newest-first order", () => {
+  const summaries = Array.from({ length: 6 }, (_, i) => ({
+    mode: i % 2 ? "Defend" : "Chase", result: "Win", overs: 1, difficulty: "Normal",
+    player: { runs: i + 1, wickets: 0 }, ai: { runs: i, wickets: 1 },
+    date: new Date(Date.UTC(2026, 0, i + 1)).toISOString(),
+  }));
+  const history = summaries.reduce((saved, summary) => addMatchToHistory(
+    JSON.parse(JSON.stringify(saved)), summary), []);
+  assert.deepEqual(history, summaries.slice(1).reverse());
+});
+
+test("AI shot direction and timing weights vary by difficulty", () => {
+  const rolls = [.25, .3];
+  assert.deepEqual(pickAiShot("Easy", () => rolls.shift()), { direction: "straight", timing: "mistimed" });
+  const hardRolls = [.25, .3];
+  assert.deepEqual(pickAiShot("Hard", () => hardRolls.shift()), { direction: "off", timing: "good" });
+});
 
 function shot(timing, line, direction, roll = 0.9, difficulty = "Normal") {
   return scoreShot({ timing, line, direction, difficulty, random: () => roll });

@@ -140,6 +140,26 @@ h2 { font-size: clamp(1.45rem, 4vw, 1.85rem); line-height: 1.1; letter-spacing: 
 fieldset { padding: 0; border: 0; margin: 0 0 17px; min-width: 0; }
 legend { padding: 0; margin-bottom: 7px; color: var(--muted); }
 .option-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.match-options, .score-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.match-options label { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.match-options input { accent-color: #c9f370; inline-size: 18px; block-size: 18px; }
+.sound-toggle { min-height: 36px; padding: 5px 10px; font-size: .78rem; }
+.score-tools { justify-content: flex-end; margin: 6px 0; }
+.history h2, .history > p, .history > ol { margin: 0; padding: 0 20px 12px; }
+.history h2 { font-size: 1rem; }
+.history > p, .history li small { color: #a6bbb0; }
+.history ol { list-style: none; }
+.history li { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--edge); font-size: .83rem; }
+.result-highlights p { margin: 10px 0; }
+.bowl-meter { padding: 9px 4px 3px; }
+.meter-track { position: relative; height: 12px; border-radius: 8px; background: #364943; }
+.meter-track span { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+#meter-good { background: #e4ba5f; }
+#meter-perfect { background: #9bd65d; }
+#meter-marker { position: absolute; left: 0; top: -4px; bottom: -4px; width: 4px; border-radius: 3px; background: white; box-shadow: 0 0 0 1px #122719; transform: translateX(-50%); }
+.scoreboard.bowling-score { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.shot-controls #off-label { font-size: inherit; }
 .option {
   position: relative;
   display: block;
@@ -195,6 +215,7 @@ legend { padding: 0; margin-bottom: 7px; color: var(--muted); }
 .start { width: 100%; min-height: 54px; justify-content: space-between; margin-top: 20px; }
 .start span { font-size: 1.3rem; }
 .records, .result-stats { display: grid; grid-template-columns: 1fr 1fr; }
+.result-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .records > div { padding: 14px 20px; }
 .records > div + div, .result-stats > div + div { border-left: 1px solid var(--edge); }
 dt { color: var(--muted); }

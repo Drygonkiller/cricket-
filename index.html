@@ -36,10 +36,11 @@
         <section class="how-to" id="how-to-play" aria-labelledby="help-title">
           <h2 id="help-title">How to play</h2>
           <ol>
-            <li>The AI bats first and sets your target.</li>
+            <li>In Chase, the AI sets your target. In Defend, you bat first and then bowl.</li>
             <li>Aim Cover, Straight or Leg with a button, an arrow key or a tap on the pitch.</li>
             <li>Press HIT or Space as the ball reaches the gold line.</li>
             <li>Match the line of the ball with perfect timing to hit a six.</li>
+            <li>To bowl, choose your line and press BOWL or Space in the green zone.</li>
           </ol>
         </section>
       </div>
@@ -47,6 +48,13 @@
       <div class="home-settings">
         <form id="setup" class="card setup">
           <h2>Match setup</h2>
+          <fieldset>
+            <legend>Match mode</legend>
+            <div class="option-grid mode-grid">
+              <label class="option"><input type="radio" name="mode" value="Chase" checked><span>Chase</span></label>
+              <label class="option"><input type="radio" name="mode" value="Defend"><span>Defend</span></label>
+            </div>
+          </fieldset>
           <fieldset>
             <legend>Overs</legend>
             <div class="option-grid">
@@ -74,12 +82,18 @@
               <label class="option team"><input type="radio" name="team" value="Australia"><span><i style="--team:#f7c750"></i>Australia</span></label>
             </div>
           </fieldset>
+          <div class="match-options">
+            <label><input type="checkbox" id="quick" checked> Quick</label>
+            <button class="secondary sound-toggle" data-sound type="button" aria-pressed="true">Sound on</button>
+          </div>
           <button class="primary start" type="submit">Start Match <span aria-hidden="true">→</span></button>
         </form>
-        <dl class="card records" aria-label="Match records">
-          <div><dt>High score</dt><dd id="high-score">—</dd></div>
-          <div><dt>Last result</dt><dd id="last-result">—</dd></div>
-        </dl>
+        <section class="card history" aria-label="Match records">
+          <dl class="records"><div><dt>High score</dt><dd id="high-score">—</dd></div></dl>
+          <h2>Match history</h2>
+          <p id="empty-history">Play a match to record a result.</p>
+          <ol id="match-history"></ol>
+        </section>
       </div>
     </section>
 
@@ -90,7 +104,9 @@
         <div><dt>Overs</dt><dd id="overs">0.0</dd></div>
         <div><dt>Target</dt><dd id="target">—</dd></div>
         <div class="score-need"><dt>Needed</dt><dd id="needed">—</dd></div>
+        <div id="balls-cell" hidden><dt>Balls left</dt><dd id="balls-left">—</dd></div>
       </dl>
+      <div class="score-tools"><button class="secondary sound-toggle" data-sound type="button" aria-pressed="true">Sound on</button></div>
 
       <section id="ai-screen" class="card ai-screen" aria-labelledby="ai-title" hidden>
         <div class="ai-header">
@@ -108,7 +124,7 @@
       <section id="bat-screen" aria-label="Your innings" hidden>
         <div class="chase-summary">
           <strong id="chase-line"></strong>
-          <span>Required rate <b id="rate">—</b></span>
+          <span id="rate-label">Required rate <b id="rate">—</b></span>
         </div>
         <div class="arena">
           <canvas id="pitch" aria-label="Cricket pitch. Tap left for Cover, middle for Straight or right for Leg.">
@@ -123,14 +139,17 @@
             <span id="impact-label"></span>
           </div>
         </div>
+        <div id="bowl-meter" class="bowl-meter" aria-label="Bowling timing meter with a green perfect zone and yellow good zone" hidden>
+          <div class="meter-track" aria-hidden="true"><span id="meter-good"></span><span id="meter-perfect"></span><i id="meter-marker"></i></div>
+        </div>
         <p id="commentary" class="commentary" role="status">Watch the ball and time your shot.</p>
         <div class="bat-controls">
-          <div class="shot-controls" role="group" aria-label="Shot direction">
-            <button type="button" data-direction="off" aria-pressed="false"><span aria-hidden="true">↖</span> Cover</button>
+          <div id="direction-controls" class="shot-controls" role="group" aria-label="Shot direction">
+            <button type="button" data-direction="off" aria-pressed="false"><span aria-hidden="true">↖</span> <span id="off-label">Cover</span></button>
             <button type="button" data-direction="straight" aria-pressed="true"><span aria-hidden="true">↑</span> Straight</button>
             <button type="button" data-direction="leg" aria-pressed="false"><span aria-hidden="true">↗</span> Leg</button>
           </div>
-          <button type="button" id="hit" class="primary hit" disabled>HIT <kbd>Space</kbd></button>
+          <button type="button" id="hit" class="primary hit" disabled><span id="action-label">HIT</span> <kbd>Space</kbd></button>
         </div>
       </section>
 
@@ -140,8 +159,13 @@
         <p id="result-summary"></p>
         <dl class="result-stats">
           <div><dt>Your score</dt><dd id="result-score"></dd></div>
+          <div><dt>AI score</dt><dd id="result-ai-score"></dd></div>
           <div><dt>Target</dt><dd id="result-target"></dd></div>
         </dl>
+        <div class="result-highlights">
+          <p id="result-best-shot"></p>
+          <p id="result-best-ball" hidden></p>
+        </div>
         <div class="result-actions">
           <button class="primary" id="play-again" type="button">Play Again <span aria-hidden="true">→</span></button>
           <button class="secondary" id="change-settings" type="button">Change Settings</button>

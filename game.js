@@ -15,7 +15,14 @@
     hit: byId("hit"), commentary: byId("commentary"), resultTitle: byId("result-title"),
     resultSummary: byId("result-summary"), resultMark: byId("result-mark"),
     resultScore: byId("result-score"), resultTarget: byId("result-target"),
-    high: byId("high-score"), last: byId("last-result"), pitch: byId("pitch"), hero: byId("hero-art"),
+    high: byId("high-score"), history: byId("match-history"), emptyHistory: byId("empty-history"),
+    pitch: byId("pitch"), hero: byId("hero-art"), quick: byId("quick"),
+    sounds: [...document.querySelectorAll("[data-sound]")],
+    ballsCell: byId("balls-cell"), ballsLeft: byId("balls-left"), rateLabel: byId("rate-label"),
+    meter: byId("bowl-meter"), marker: byId("meter-marker"), goodZone: byId("meter-good"),
+    perfectZone: byId("meter-perfect"), offLabel: byId("off-label"), action: byId("action-label"),
+    directionControls: byId("direction-controls"), resultAiScore: byId("result-ai-score"),
+    bestShot: byId("result-best-shot"), bestBall: byId("result-best-ball"),
     directions: [...document.querySelectorAll("[data-direction]")],
   };
   const TEAMS = {
@@ -28,8 +35,12 @@
   const SIDE = { off: -1, straight: 0, leg: 1 };
   const ARROWS = { ArrowLeft: "off", ArrowDown: "straight", ArrowRight: "leg" };
   const FLIGHT = { Easy: 1600, Normal: 1280, Hard: 1000 };
-  const DELIVERY_GAP = { 1: 1100, 2: 2200, 5: 1000 };
-  const FEEDBACK_TIME = { 1: 2450, 2: 4350, 5: 2150 };
+  const DELIVERY_GAP = { Easy: 1650, Normal: 1400, Hard: 1150 };
+  const FEEDBACK_TIME = { Easy: 2850, Normal: 2500, Hard: 2100 };
+  const METER_TIME = { Easy: 1800, Normal: 1500, Hard: 1250 };
+  const AI_ACTION = { off: "drives through cover", straight: "hits straight", leg: "pulls to leg" };
+  const SHOT_PATH = { off: "through covers", straight: "down the ground", leg: "to leg" };
+  const TIMING_RANK = { missed: 0, early: 1, late: 1, good: 2, perfect: 3 };
   const AI_INTERVAL = 600;
   const STORAGE_PREFIX = "super-over-smash:";
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -54,6 +65,14 @@
   let lastFrame = null;
   let clock = 0;
   let pitch;
+  let bowling = false;
+  let playerInnings;
+  let bestShot;
+  let bestBall;
+  let muted = readStorage("muted", false) === true;
+  let audio;
+  let audioMaster;
+  let audioUnavailable = false;
 
   function readStorage(key, fallback) {
     try {
@@ -73,9 +92,104 @@
 
   function showRecords() {
     const high = readStorage("high-score", null);
-    const last = readStorage("last-result", null);
     ui.high.textContent = Number.isFinite(high) ? high + " runs" : "—";
-    ui.last.textContent = last ? last.result + " · " + last.runs + "/" + last.wickets : "—";
+    const history = readHistory();
+    ui.history.replaceChildren();
+    ui.emptyHistory.hidden = history.length > 0;
+    for (const match of history) {
+      const row = document.createElement("li");
+      const score = document.createElement("strong");
+      const context = document.createElement("small");
+      score.textContent = match.mode + " · " + match.result + " · You " + formatScore(match.player) +
+        " / AI " + formatScore(match.ai);
+      const overs = match.overs ? match.overs + (match.overs === 1 ? " over" : " overs") : "";
+      const date = match.date ? new Date(match.date) : null;
+      context.textContent = [overs, match.difficulty, date && Number.isFinite(date.getTime())
+        ? date.toLocaleDateString("en", { year: "numeric", month: "short", day: "numeric" }) : null]
+        .filter(Boolean).join(" · ");
+      row.append(score, context);
+      ui.history.append(row);
+    }
+  }
+
+  function readHistory() {
+    const history = readStorage("match-history", null);
+    if (Array.isArray(history)) return history;
+    const last = readStorage("last-result", null);
+    if (!last || !Number.isFinite(last.runs)) return [];
+    return [{ mode: "Chase", result: last.result, player: { runs: last.runs, wickets: last.wickets },
+      ai: Number.isFinite(last.target) ? { runs: last.target - 1 } : null }];
+  }
+
+  function formatScore(innings) {
+    if (!innings) return "—";
+    return Number.isFinite(innings.wickets) ? innings.runs + "/" + innings.wickets : String(innings.runs);
+  }
+
+  function unlockSound() {
+    if (muted || audioUnavailable) return;
+    try {
+      const Audio = window.AudioContext || window.webkitAudioContext;
+      if (!Audio) { audioUnavailable = true; return; }
+      if (!audio) {
+        audio = new Audio();
+        audioMaster = audio.createGain();
+        audioMaster.connect(audio.destination);
+      }
+      if (audio.state === "suspended") audio.resume().catch(() => {});
+    } catch {
+      audioUnavailable = true;
+    }
+  }
+
+  function tone(frequency, end, duration, volume, type = "sine", delay = 0) {
+    const now = audio.currentTime + delay;
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, now);
+    oscillator.frequency.exponentialRampToValueAtTime(end, now + duration);
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    oscillator.connect(gain).connect(audioMaster);
+    oscillator.start(now);
+    oscillator.stop(now + duration);
+  }
+
+  function playSound(kind) {
+    if (muted || !audio || audio.state !== "running") return;
+    try {
+      if (kind === "click") tone(600, 380, .045, .022);
+      if (kind === "bounce") tone(165, 82, .075, .040, "triangle");
+      if (kind === "hit") tone(235, 70, .10, .085, "triangle");
+      if (kind === "wicket") {
+        tone(420, 290, .18, .05, "triangle");
+        tone(265, 125, .28, .055, "triangle", .13);
+      }
+      if (kind === "cheer") {
+        const samples = audio.createBuffer(1, Math.floor(audio.sampleRate * .65), audio.sampleRate);
+        const data = samples.getChannelData(0);
+        for (let i = 0; i < data.length; i += 1) data[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * i / data.length);
+        const noise = audio.createBufferSource();
+        const filter = audio.createBiquadFilter();
+        const gain = audio.createGain();
+        noise.buffer = samples;
+        filter.type = "bandpass";
+        filter.frequency.value = 780;
+        gain.gain.value = .13;
+        noise.connect(filter).connect(gain).connect(audioMaster);
+        noise.start();
+      }
+    } catch {
+      // Audio support must never interrupt a match.
+    }
+  }
+
+  function updateSoundToggles() {
+    for (const button of ui.sounds) {
+      button.textContent = muted ? "Sound off" : "Sound on";
+      button.setAttribute("aria-pressed", String(!muted));
+    }
   }
 
   function showScreen(next) {
@@ -93,7 +207,9 @@
   }
 
   function updateScoreboard(innings, isAi = false, isFinished = false) {
-    ui.scoreLabel.textContent = isAi ? "AI score" : "Score";
+    ui.scoreLabel.textContent = isAi || bowling ? "AI score" : settings.mode === "Defend" ? "Your score" : "Score";
+    ui.ballsCell.hidden = !bowling;
+    ui.ballsCell.parentElement.classList.toggle("bowling-score", bowling);
     ui.score.textContent = innings.runs;
     ui.wickets.textContent = innings.wickets;
     ui.overs.textContent = logic.ballsToOvers(innings.balls);
@@ -102,8 +218,16 @@
       ui.needed.textContent = target ?? "—";
       return;
     }
+    ui.rateLabel.hidden = target === null;
+    if (target === null) {
+      const ballsLeft = logic.oversToBalls(settings.overs) - innings.balls;
+      ui.needed.textContent = "—";
+      ui.chaseLine.textContent = "Set a target · " + ballsLeft + (ballsLeft === 1 ? " ball left" : " balls left");
+      return;
+    }
     const { runsNeeded, ballsLeft, rate } = logic.chaseInfo(innings, settings.overs, target);
     ui.needed.textContent = runsNeeded;
+    ui.ballsLeft.textContent = ballsLeft;
     const balls = ballsLeft + (ballsLeft === 1 ? " ball" : " balls");
     ui.chaseLine.textContent = runsNeeded ? runsNeeded + " needed off " + balls : "Target reached";
     ui.rate.textContent = rate === null || isFinished ? "—" : rate.toFixed(2);
@@ -111,7 +235,11 @@
 
   function startMatch(newSettings) {
     settings = newSettings;
-    ai = logic.simulateInnings(settings.overs, settings.difficulty);
+    bowling = false;
+    playerInnings = null;
+    bestShot = null;
+    bestBall = null;
+    ai = null;
     aiIndex = 0;
     target = null;
     chase = logic.newInnings();
@@ -121,19 +249,30 @@
     feedback = null;
     clock = 0;
     lastFrame = null;
-    nextAiBall = AI_INTERVAL;
+    nextAiBall = pauseLength(AI_INTERVAL);
     const overs = settings.overs === 1 ? "1 over" : settings.overs + " overs";
     ui.label.textContent = settings.team + " · " + overs + " · " + settings.difficulty;
     ui.aiTitle.textContent = "AI innings";
     ui.indicator.textContent = "Live";
     ui.aiStatus.textContent = "The AI is setting your target.";
     ui.ticker.replaceChildren();
+    ui.ticker.hidden = false;
     ui.skip.hidden = false;
     ui.startChase.hidden = true;
+    ui.startChase.textContent = "Start chase →";
+    if (settings.mode === "Defend") {
+      startLiveInnings();
+      return;
+    }
+    ai = logic.simulateInnings(settings.overs, settings.difficulty);
     updateScoreboard(logic.newInnings(), true);
     showScreen("ai");
     ui.aiTitle.focus({ preventScroll: true });
     requestFrame();
+  }
+
+  function pauseLength(milliseconds) {
+    return settings.quick ? milliseconds / 2 : milliseconds;
   }
 
   function describeAi(outcome) {
@@ -184,25 +323,52 @@
 
   function tickAi() {
     if (clock < nextAiBall) return;
-    nextAiBall = clock + AI_INTERVAL;
+    nextAiBall = clock + pauseLength(AI_INTERVAL);
     const ball = ai.deliveries[aiIndex++];
     addTickerRow(ball);
+    if (ball.outcome === "OUT") playSound("wicket");
+    if (ball.outcome === 4 || ball.outcome === 6) playSound("cheer");
     updateScoreboard(ball.innings, true);
     if (aiIndex === ai.deliveries.length) finishAi();
   }
 
   function aim(next) {
     direction = next;
-    ui.aim.textContent = DIRECTION_NAME[next];
+    ui.aim.textContent = bowling && next === "off" ? "Off" : DIRECTION_NAME[next];
     for (const button of ui.directions) button.setAttribute("aria-pressed", String(button.dataset.direction === next));
   }
 
   function startChase() {
     if (screen !== "target") return;
+    if (settings.mode === "Defend") {
+      bowling = true;
+      chase = logic.newInnings();
+    }
+    startLiveInnings();
+  }
+
+  function startLiveInnings() {
     showScreen("bat");
+    lastFrame = null;
+    ui.bat.setAttribute("aria-label", bowling ? "Your bowling innings" : "Your batting innings");
+    ui.directionControls.setAttribute("aria-label", bowling ? "Bowling line" : "Shot direction");
+    ui.pitch.setAttribute("aria-label", bowling ? "Cricket pitch. Tap left for Off, middle for Straight or right for Leg."
+      : "Cricket pitch. Tap left for Cover, middle for Straight or right for Leg.");
+    ui.offLabel.textContent = bowling ? "Off" : "Cover";
+    ui.action.textContent = bowling ? "BOWL" : "HIT";
+    ui.meter.hidden = !bowling;
+    if (bowling) {
+      const duration = METER_TIME[settings.difficulty];
+      const window = logic.timingWindow(settings.difficulty);
+      for (const [zone, halfWidth] of [[ui.goodZone, window.good], [ui.perfectZone, window.perfect]]) {
+        zone.style.left = (50 - halfWidth * 100 / duration) + "%";
+        zone.style.width = (halfWidth * 200 / duration) + "%";
+      }
+    }
     aim("straight");
     updateScoreboard(chase);
-    ui.commentary.textContent = "Watch the ball. Hit as it reaches the gold line.";
+    ui.commentary.textContent = bowling ? "Pick your line and bowl in the green zone."
+      : "Watch the ball. Hit as it reaches the gold line.";
     ui.directions[1].focus({ preventScroll: true });
     sizePitch();
     readyDelivery();
@@ -214,25 +380,27 @@
     phase = "ready";
     phaseStart = clock;
     ui.impact.hidden = true;
-    ui.tag.textContent = "Bowler ready";
+    ui.tag.textContent = bowling ? "Pick your line" : "Bowler ready";
+    ui.marker.style.left = "0%";
     ui.hit.disabled = true;
     delivery = null;
     feedback = null;
   }
 
-  function bowl() {
-    const line = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+  function bowl(timing) {
+    const line = bowling ? direction : DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
     const extra = logic.rollExtra();
     const swing = !extra && Math.random() < .19;
     const startSide = swing ? SIDE[line] - (SIDE[line] || (Math.random() < .5 ? -1 : 1)) : SIDE[line];
     delivery = {
-      line, extra, startSide, swing,
+      line, extra, startSide, swing, timing, bounced: false,
+      aiShot: bowling ? logic.pickAiShot(settings.difficulty) : null,
       landingSide: extra === "wide" ? (Math.random() < .5 ? -2.7 : 2.7) : SIDE[line],
       duration: FLIGHT[settings.difficulty] * (.89 + Math.random() * .22),
     };
     phase = "ball";
     phaseStart = clock;
-    ui.hit.disabled = Boolean(extra);
+    ui.hit.disabled = bowling || Boolean(extra);
     ui.tag.textContent = extra === "wide" ? "Wide" : extra === "no-ball" ? "No-ball" : "Ball released";
   }
 
@@ -242,8 +410,10 @@
 
   function settleBall(timing, time = clock) {
     const { line, extra } = delivery;
-    const outcome = extra ?? logic.scoreShot({ timing, line, direction, difficulty: settings.difficulty });
-    const playedDirection = direction;
+    const outcome = extra ?? (bowling
+      ? logic.bowlDelivery({ timing, line, aiShot: delivery.aiShot, difficulty: settings.difficulty })
+      : logic.scoreShot({ timing, line, direction, difficulty: settings.difficulty }));
+    const playedDirection = bowling ? delivery.aiShot.direction : direction;
     const launchProgress = Math.min(1.12, ballProgress(time));
     chase = logic.recordBall(chase, outcome);
     phase = "feedback";
@@ -251,13 +421,41 @@
     feedback = { outcome, timing, direction: playedDirection, launchProgress };
     ui.hit.disabled = true;
     ui.tag.textContent = extra ? "Extra delivery" : "Ball complete";
-    const [value, label, message] = playerCommentary(outcome, timing, line, playedDirection);
+    trackHighlight(outcome, timing, bowling ? line : playedDirection);
+    if (outcome === "OUT") playSound("wicket");
+    if (outcome > 0) playSound("hit");
+    if (outcome === 4 || outcome === 6) playSound("cheer");
+    const [value, label, message] = bowling ? bowlingCommentary(outcome, timing, playedDirection) :
+      playerCommentary(outcome, timing, line, playedDirection);
     ui.impactValue.textContent = value;
     ui.impactLabel.textContent = label;
     ui.impact.hidden = false;
     const over = logic.ballsToOvers(chase.balls);
     ui.commentary.textContent = (extra ? "Extra" : over) + " · " + message;
     updateScoreboard(chase);
+  }
+
+  function bowlingCommentary(outcome, timing, shotDirection) {
+    if (outcome === "wide" || outcome === "no-ball") return playerCommentary(outcome);
+    const action = "AI " + AI_ACTION[shotDirection];
+    const timingLabel = timing === "missed" ? "Loose ball" : timing + " release";
+    if (outcome === "OUT") return ["OUT", timingLabel, action + " and loses a wicket."];
+    if (outcome === 0) return ["0", timingLabel, action + ". Dot ball."];
+    return [outcome === 6 ? "SIX!" : outcome === 4 ? "FOUR!" : String(outcome),
+      timingLabel, action + " for " + outcome + (outcome === 1 ? " run." : " runs.")];
+  }
+
+  function trackHighlight(outcome, timing, line) {
+    if (bowling) {
+      if (outcome !== "OUT" && typeof outcome !== "number") return;
+      const rank = outcome === "OUT" ? 7 : 6 - outcome;
+      if (!bestBall || rank > bestBall.rank || (rank === bestBall.rank && TIMING_RANK[timing] > TIMING_RANK[bestBall.timing])) {
+        bestBall = { outcome, timing, line, rank };
+      }
+    } else if (typeof outcome === "number" && timing !== "missed" &&
+        (!bestShot || outcome > bestShot.outcome || (outcome === bestShot.outcome && TIMING_RANK[timing] > TIMING_RANK[bestShot.timing]))) {
+      bestShot = { outcome, timing, line };
+    }
   }
 
   function playerCommentary(outcome, timing, line, playedDirection) {
@@ -277,9 +475,21 @@
   }
 
   function hit() {
-    if (screen !== "bat" || document.hidden || phase !== "ball" || delivery.extra) return;
+    if (screen !== "bat" || document.hidden) return;
     const sinceFrame = lastFrame === null ? 0 : Math.min(64, Math.max(0, performance.now() - lastFrame));
     const time = clock + sinceFrame;
+    if (bowling) {
+      if (phase !== "meter") return;
+      const duration = METER_TIME[settings.difficulty];
+      const elapsed = time - phaseStart;
+      const offset = elapsed - duration / 2;
+      const window = logic.timingWindow(settings.difficulty);
+      const timing = elapsed >= duration ? "missed" : Math.abs(offset) <= window.perfect ? "perfect"
+        : Math.abs(offset) <= window.good ? "good" : offset < 0 ? "early" : "late";
+      bowl(timing);
+      return;
+    }
+    if (phase !== "ball" || delivery.extra) return;
     const timing = logic.classifyTiming(time - phaseStart - delivery.duration, settings.difficulty);
     settleBall(timing, time);
   }
@@ -287,41 +497,92 @@
   function tickChase() {
     const elapsed = clock - phaseStart;
     if (phase === "ready") {
-      if (elapsed >= DELIVERY_GAP[settings.overs]) bowl();
+      if (elapsed < DELIVERY_GAP[settings.difficulty]) return;
+      if (bowling) {
+        phase = "meter";
+        phaseStart = clock;
+        ui.hit.disabled = false;
+        ui.tag.textContent = "Time your release";
+      } else bowl();
+    } else if (phase === "meter") {
+      const duration = METER_TIME[settings.difficulty];
+      ui.marker.style.left = Math.min(100, elapsed * 100 / duration) + "%";
+      if (elapsed >= duration) bowl("missed");
     } else if (phase === "ball") {
+      if (!delivery.bounced && ballProgress() >= .64) {
+        delivery.bounced = true;
+        playSound("bounce");
+      }
       const timeout = delivery.extra ? 100 : logic.timingWindow(settings.difficulty).late;
-      if (elapsed > delivery.duration + timeout) settleBall("missed");
+      if (bowling && elapsed >= delivery.duration) settleBall(delivery.timing);
+      else if (elapsed > delivery.duration + timeout) settleBall("missed");
       else if (!delivery.extra && ui.tag.textContent === "Ball released" &&
           Math.abs(elapsed - delivery.duration) <= logic.timingWindow(settings.difficulty).perfect) {
         ui.tag.textContent = "Strike zone";
       }
     } else if (phase === "feedback") {
-      const finished = logic.inningsEnded(chase, settings.overs, target);
+      const finished = logic.inningsEnded(chase, settings.overs, target ?? Infinity);
       const extra = feedback.outcome === "wide" || feedback.outcome === "no-ball";
-      const delay = finished ? 1450 : extra ? 1200 : FEEDBACK_TIME[settings.overs];
+      const delay = pauseLength(finished ? 1450 : extra ? 1200 : FEEDBACK_TIME[settings.difficulty]);
       if (elapsed < delay) return;
-      if (finished) finishChase();
+      if (finished && target === null) finishFirstInnings();
+      else if (finished) finishChase();
       else readyDelivery();
     }
   }
 
+  function finishFirstInnings() {
+    playerInnings = chase;
+    target = playerInnings.runs + 1;
+    showScreen("target");
+    updateScoreboard(playerInnings);
+    ui.aiTitle.textContent = "Target: " + target;
+    ui.indicator.textContent = "Innings break";
+    ui.aiStatus.textContent = "You scored " + formatScore(playerInnings) + ". Bowl to keep the AI below " + target + ".";
+    ui.ticker.hidden = true;
+    ui.skip.hidden = true;
+    ui.startChase.textContent = "Start bowling →";
+    ui.startChase.hidden = false;
+    ui.startChase.focus({ preventScroll: true });
+  }
+
   function finishChase() {
-    const result = logic.matchResult(chase.runs, target);
+    const player = bowling ? playerInnings : chase;
+    const opponent = bowling ? chase : ai.innings;
+    const result = bowling ? logic.defendResult(opponent.runs, target) : logic.matchResult(player.runs, target);
     const previous = readStorage("high-score", 0);
-    writeStorage("high-score", Math.max(Number.isFinite(previous) ? previous : 0, chase.runs));
-    writeStorage("last-result", { result, runs: chase.runs, wickets: chase.wickets, target });
+    writeStorage("high-score", Math.max(Number.isFinite(previous) ? previous : 0, player.runs));
+    writeStorage("match-history", logic.addMatchToHistory(readHistory(), {
+      mode: settings.mode, result, player, ai: opponent, overs: settings.overs,
+      difficulty: settings.difficulty, date: new Date().toISOString(),
+    }));
     ui.result.dataset.outcome = result;
     ui.resultTitle.textContent = result;
     ui.resultMark.textContent = result === "Win" ? "✓" : result === "Tie" ? "=" : "×";
-    ui.resultScore.textContent = chase.runs + "/" + chase.wickets;
+    ui.resultScore.textContent = formatScore(player);
+    ui.resultAiScore.textContent = formatScore(opponent);
     ui.resultTarget.textContent = target;
-    const short = target - 1 - chase.runs;
-    ui.resultSummary.textContent = result === "Win" ? settings.team + " chased down the target."
-      : result === "Tie" ? "Both sides scored " + chase.runs + "."
+    const short = opponent.runs - player.runs;
+    ui.resultSummary.textContent = result === "Tie" ? "Both sides scored " + player.runs + "."
+      : bowling ? result === "Win" ? settings.team + " defended the target." : "The AI chased down the target."
+      : result === "Win" ? settings.team + " chased down the target."
       : "The AI won by " + short + (short === 1 ? " run." : " runs.");
+    ui.bestShot.textContent = "Best shot: " + (bestShot ? bestShot.outcome + " — " +
+      capitalize(bestShot.timing) + ", " + SHOT_PATH[bestShot.line] : "No shot played");
+    ui.bestBall.hidden = !bowling;
+    if (bowling) {
+      ui.bestBall.textContent = "Best ball: " + (bestBall ? (bestBall.outcome === "OUT" ? "WICKET"
+        : bestBall.outcome === 0 ? "DOT BALL" : bestBall.outcome + (bestBall.outcome === 1 ? " run" : " runs")) +
+        " — " + capitalize(bestBall.timing === "missed" ? "loose" : bestBall.timing) +
+        " release, " + LINE_NAME[bestBall.line] : "No legal delivery");
+    }
     updateScoreboard(chase, false, true);
     showScreen("result");
     ui.resultTitle.focus({ preventScroll: true });
+  }
+
+  function capitalize(text) {
+    return text[0].toUpperCase() + text.slice(1);
   }
 
   function active() {
@@ -602,7 +863,7 @@
     }
     if (!out) stroke(ctx, "#fff5d3", 2.5 * s, cx - 7 * s, base - 26 * s, cx + 7 * s, base - 26 * s);
     const batterX = cx - half * .36 - 10 * s;
-    player(ctx, batterX, base + 4 * s, s * 1.42, TEAMS[settings.team], swing * 3);
+    player(ctx, batterX, base + 4 * s, s * 1.42, bowling ? "#a1d4bc" : TEAMS[settings.team], swing * 3);
     ctx.save();
     ctx.translate(batterX + 12 * s, base - 24 * s);
     ctx.rotate(.54 - swing * 2.3);
@@ -696,11 +957,13 @@
     ctx.drawImage(backdrop, 0, 0, w, h);
     ctx.save();
     if (six) ctx.translate(Math.sin(elapsed * .11) * 4 * (1 - elapsed / 280), Math.cos(elapsed * .14) * 2);
-    const approach = phase === "ready" ? Math.max(0, 1 - (DELIVERY_GAP[settings.overs] - elapsed) / 470) : 0;
-    player(ctx, cx - 4 * scale, top + (approach - 1) * 11 * scale, scale * .95, "#a1d4bc", Math.sin(approach * 9) * 3);
+    const approach = phase === "ready" ? Math.max(0, 1 - (DELIVERY_GAP[settings.difficulty] - elapsed) / 470) : 0;
+    player(ctx, cx - 4 * scale, top + (approach - 1) * 11 * scale, scale * .95,
+      bowling ? TEAMS[settings.team] : "#a1d4bc", Math.sin(approach * 9) * 3);
     drawAim(ctx);
-    const swing = striking && feedback.timing !== "missed" ? Math.max(0, 1 - elapsed / 410) : 0;
-    drawBatter(ctx, swing, striking && feedback.outcome === "OUT" && feedback.timing === "missed");
+    const swing = striking && (bowling ? feedback.outcome > 0 : feedback.timing !== "missed")
+      ? Math.max(0, 1 - elapsed / 410) : 0;
+    drawBatter(ctx, swing, striking && feedback.outcome === "OUT" && (bowling || feedback.timing === "missed"));
     if (phase === "ball") {
       const progress = Math.min(1.21, ballProgress());
       for (let i = 4; i > 0; i -= 1) {
@@ -721,7 +984,26 @@
   ui.setup.addEventListener("submit", (event) => {
     event.preventDefault();
     const values = new FormData(ui.setup);
-    startMatch({ overs: Number(values.get("overs")), difficulty: values.get("difficulty"), team: values.get("team") });
+    startMatch({ mode: values.get("mode") || "Chase", overs: Number(values.get("overs")),
+      difficulty: values.get("difficulty"), team: values.get("team"), quick: ui.quick.checked });
+  });
+  ui.quick.checked = readStorage("quick", true) !== false;
+  ui.quick.addEventListener("change", () => writeStorage("quick", ui.quick.checked));
+  for (const button of ui.sounds) {
+    button.addEventListener("click", () => {
+      muted = !muted;
+      writeStorage("muted", muted);
+      if (audioMaster) audioMaster.gain.value = muted ? 0 : 1;
+      unlockSound();
+      playSound("click");
+      updateSoundToggles();
+    });
+  }
+  document.addEventListener("pointerdown", unlockSound, true);
+  document.addEventListener("keydown", unlockSound, true);
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (button && button !== ui.hit && !ui.sounds.includes(button)) playSound("click");
   });
   ui.skip.addEventListener("click", skipAi);
   ui.startChase.addEventListener("click", startChase);
@@ -739,7 +1021,10 @@
     aim(DIRECTIONS[third]);
   });
   ui.hit.addEventListener("pointerdown", (event) => {
-    if (event.isPrimary && event.button === 0) hit();
+    if (event.isPrimary && event.button === 0) {
+      if (bowling) playSound("click");
+      hit();
+    }
   });
   ui.hit.addEventListener("click", (event) => {
     if (event.detail === 0) hit();
@@ -747,8 +1032,12 @@
   document.addEventListener("keydown", (event) => {
     if (screen !== "bat" || event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.code === "Space" || event.key === " ") {
+      if (ui.sounds.includes(event.target)) return;
       event.preventDefault();
-      if (!event.repeat) hit();
+      if (!event.repeat) {
+        if (bowling && phase === "meter") playSound("click");
+        hit();
+      }
     } else if (ARROWS[event.key]) {
       event.preventDefault();
       aim(ARROWS[event.key]);
@@ -775,6 +1064,7 @@
   window.addEventListener("resize", resize);
   drawHero();
   showRecords();
+  updateSoundToggles();
 
   if ("serviceWorker" in navigator && window.isSecureContext && location.protocol !== "file:") {
     navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch((error) => {
