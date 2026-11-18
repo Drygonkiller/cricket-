@@ -1,0 +1,31 @@
+name: Build cricket stadium assets
+on:
+  push:
+    branches: [build/super-over-smash-stadium]
+permissions:
+  contents: write
+jobs:
+  export:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install Blender from Ubuntu
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender
+      - name: Export and render
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender --background --factory-startup --python-exit-code 1 --threads 4 --python blender/build_stadium.py | tee "$RUNNER_TEMP/stadium.log"
+          grep -E '^(TRIANGLES|TOTAL_TRIANGLES|MATERIALS|OUTPUT) ' "$RUNNER_TEMP/stadium.log" > blender/stadium-build-report.txt
+          test "$(head -c 4 assets/cricket_stadium.glb)" = "glTF"
+      - name: Save generated files on the build branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/cricket_stadium.blend assets/cricket_stadium.glb renders/stadium_preview.png blender/stadium-build-report.txt
+          git commit -m 'Render and export the Blender stadium' || test -z "$(git status --porcelain)"
+          git push origin HEAD:build/super-over-smash-stadium
