@@ -1,3 +1,5 @@
+▶ Play live: https://super-over-smash.vercel.app
+
 # Super Over Smash
 
 A mobile-first cricket game with 1, 2, or 5 overs. In Chase, the AI sets a target for you to beat. In Defend, you bat first and then bowl while the AI chases your score.
