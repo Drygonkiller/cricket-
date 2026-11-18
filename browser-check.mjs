@@ -67,6 +67,9 @@ try {
   await cdp("Page.addScriptToEvaluateOnNewDocument", { source: `
     window.qaRandom = [];
     Math.random = () => window.qaRandom.shift() ?? .6;
+    window.qaErrors = [];
+    window.addEventListener("error", event => window.qaErrors.push(event.message));
+    window.addEventListener("unhandledrejection", event => window.qaErrors.push(String(event.reason)));
     window.qaAudio = { starts: [], firstGain: null };
     const createGain = AudioContext.prototype.createGain;
     AudioContext.prototype.createGain = function () {
@@ -97,7 +100,8 @@ try {
   assert.match(await exec('return location.search'), /mode=Chase&overs=1&difficulty=Normal&team=Australia&quick=1/);
   assert.equal(await txt("match-settings"), "Chase · Australia · 1 over · Normal");
   await waitFor(async () => await txt("ai-title") === "Target: 13", "AI target");
-  await click("#start-chase");
+  await formClick("#start-chase");
+  assert.equal(await exec('return document.querySelector("#batting").hidden'), false);
 
   const strike = () => waitFor(async () => await txt("shot-timing") === "Strike zone", "strike zone", 10000);
   const settled = () => waitFor(async () => await txt("shot-timing") === "Ball complete", "settled delivery");
@@ -237,6 +241,15 @@ try {
   await touch("#play-2d");
   assert.equal(await exec('return document.querySelector("#match").hidden'), false);
   console.log("BROWSER OFFLINE 2D reloaded and started a match without network");
+} catch (error) {
+  if (session) {
+    const ui = await driver(session + "/execute/sync", {
+      script: 'return {url:location.href, errors:window.qaErrors, text:Object.fromEntries(["ai-title","shot-timing","commentary","score","action-label"].map(id=>[id,document.getElementById(id)?.textContent]))}',
+      args: [],
+    }).catch(() => null);
+    console.log("BROWSER DIAGNOSTICS", JSON.stringify(ui));
+  }
+  throw error;
 } finally {
   if (session) await driver(session, undefined, "DELETE").catch(() => {});
   driverProcess.kill();
