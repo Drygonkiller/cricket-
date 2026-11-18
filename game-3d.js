@@ -414,8 +414,8 @@ export async function boot() {
     stage.handPosition(ballRelease);
     stage.ball.visible = true;
     placeBall(0);
-    hitButton.disabled = bowling || Boolean(extra);
-    byId("shot-timing").textContent = extra ? "Extra delivery" : "Ball released";
+    hitButton.disabled = bowling || Boolean(delivery.extra);
+    byId("shot-timing").textContent = delivery.extra ? "Extra delivery" : "Ball released";
     nextPhase("flight");
   }
 
