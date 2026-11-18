@@ -200,7 +200,7 @@ try {
   await green();
   await touch("#hit");
   await settled();
-  await touch("#sound-toggle");
+  await formClick("#sound-toggle");
   assert.equal(await txt("sound-toggle"), "Sound off");
   assert.equal(await exec('return localStorage.getItem("super-over-smash:muted")'), "true");
   for (let ball = 3; ball < 6; ball++) {
@@ -219,7 +219,8 @@ try {
   assert.match(await txt("match-history"), /Defend 3D.*Chase 3D/s);
   assert.match(await txt("high-score"), /[1-9]\d* runs/);
   assert.equal(await exec('return document.querySelector("[data-sound]").textContent'), "Sound off");
-  await touch("[data-sound]");
+  await formClick("[data-sound]");
+  assert.equal(await exec('return localStorage.getItem("super-over-smash:muted")'), "false");
   console.log("BROWSER STORAGE 3D matches and high score visible at home; shared mute setting");
 
   await cdp("Network.enable", {});
@@ -240,7 +241,7 @@ try {
   await cmd("/refresh", {});
   await waitFor(() => exec('return Boolean(window.SuperOverLogic && document.querySelector("#setup"))'), "cached 2D reload");
   assert.equal(await exec('return navigator.onLine'), false);
-  await touch("#play-2d");
+  await formClick("#play-2d");
   assert.equal(await exec('return document.querySelector("#match").hidden'), false);
   console.log("BROWSER OFFLINE 2D reloaded and started a match without network");
 } catch (error) {
