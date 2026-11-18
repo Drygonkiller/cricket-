@@ -25,6 +25,6 @@ TRIANGLES Turf_Mowing_Bands: 720
 TRIANGLES Upper_Fascia: 432
 TOTAL_TRIANGLES 9950
 MATERIALS Ash, Ball Red, Blue Seats, Chalk, Concrete, Coral Jersey, Gold, Grass, Grass Cut, Lamp Ivory, Mint Jersey, Navy, Pad, Pitch Clay, Skin, Stand Shadow, Steel, Teal Seats
-OUTPUT assets/cricket_stadium.blend 201837 bytes
-OUTPUT assets/cricket_stadium.glb 494512 bytes
-OUTPUT renders/stadium_preview.png 1817492 bytes
+OUTPUT assets/cricket_stadium.blend 200935 bytes
+OUTPUT assets/cricket_stadium.glb 494452 bytes
+OUTPUT renders/stadium_preview.png 1797571 bytes
