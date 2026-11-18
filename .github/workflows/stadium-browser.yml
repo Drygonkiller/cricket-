@@ -15,7 +15,7 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 72); do
-            git fetch --quiet --depth=1 origin build/super-over-smash-stadium
+            git fetch --quiet --depth=1 origin build/super-over-smash-portable
             if git cat-file -e FETCH_HEAD:assets/cricket_stadium.glb 2>/dev/null; then
               git checkout FETCH_HEAD -- assets/cricket_stadium.glb
               exit 0
