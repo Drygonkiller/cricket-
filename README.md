@@ -30,9 +30,11 @@ During bowling, choose Off, Straight, or Leg with the same buttons, arrow keys, 
 
 Quick halves the AI ticker and feedback pauses. Quick, sound, your high score, and your five most recent matches are stored on the current device.
 
-## Play 3D
+## Play 3D or 2D
 
-Choose overs, difficulty, and team at home, then select **Play 3D** to start a batting chase in the stadium. Aim with the three shot buttons, arrow keys, or a tap on the left, centre, or right third of the pitch. Tap **HIT** or press **Space** near the gold line. 3D uses the same scoring and timing windows as 2D.
+Choose a mode, overs, difficulty, team, and Quick at home. **Play** opens the 3D stadium. In Chase, bat to beat the AI's target. In Defend, bat first, then bowl while the AI chases. Use the direction buttons, arrow keys, or the left, centre, or right third of the pitch to aim. Tap **HIT** or press **Space** near the gold line. When bowling, tap **BOWL** or press **Space** as the meter reaches green.
+
+**Play 2D (light version)** starts the same setup in 2D. Both versions share the sound setting, high score, and five-match history. Completed stadium matches are marked **3D** in the history.
 
 The 3D page uses **Three.js 0.180.0** and its **GLTFLoader 0.180.0** from jsDelivr. It needs WebGL 2 and a network connection to load those modules. The 2D game keeps its existing offline cache and does not load Three.js.
 

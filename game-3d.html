@@ -17,6 +17,13 @@
   </script>
   <script defer src="./game-logic.js"></script>
   <script type="module">
+    const lightUrl = new URL("./", location.href);
+    const choices = new URLSearchParams(location.search);
+    for (const key of ["mode", "overs", "difficulty", "team", "quick"]) {
+      if (choices.has(key)) lightUrl.searchParams.set(key, choices.get(key));
+    }
+    lightUrl.searchParams.set("play", "2d");
+    document.querySelectorAll("[data-light-link]").forEach(link => link.href = lightUrl.href);
     import("./game-3d.js").then(({ boot }) => boot()).catch(error => {
       document.getElementById("loading").hidden = false;
       document.getElementById("ai-panel").hidden = true;
@@ -29,8 +36,11 @@
 </head>
 <body class="three-page">
   <header class="three-header">
-    <div><a href="./" class="three-back">← Back to 2D</a><h1>Super Over Smash <span>3D</span></h1></div>
-    <p id="match-settings"></p>
+    <div><a href="./" class="three-back">← Match setup</a><h1>Super Over Smash <span>3D</span></h1></div>
+    <div class="three-settings">
+      <p id="match-settings"></p>
+      <button id="sound-toggle" class="secondary sound-toggle" type="button" aria-pressed="true">Sound on</button>
+    </div>
   </header>
   <main class="three-match">
     <dl class="scoreboard three-score" aria-label="Live scoreboard">
@@ -45,7 +55,7 @@
       <div id="loading" class="three-overlay" role="status">
         <h2 id="load-title">Loading the stadium</h2>
         <p id="load-message">Loading the stadium and Three.js over the internet.</p>
-        <a class="secondary" href="./">Play in 2D</a>
+        <a class="secondary" href="./?play=2d" data-light-link>Play 2D (light version)</a>
       </div>
       <div id="ai-panel" class="three-overlay" hidden>
         <h2 id="ai-title" tabindex="-1">AI innings</h2>
@@ -58,6 +68,10 @@
       <div id="result" class="three-overlay" hidden>
         <h2 id="result-title" tabindex="-1"></h2>
         <p id="result-score"></p>
+        <div class="three-highlights">
+          <p id="best-shot"></p>
+          <p id="best-ball"></p>
+        </div>
         <div class="three-actions">
           <button id="replay" class="primary" type="button">Play Again</button>
           <a href="./" class="secondary">Home</a>
@@ -66,17 +80,20 @@
       <div id="impact" class="three-impact" aria-hidden="true" hidden></div>
     </section>
     <div id="batting" hidden>
+      <div id="bowling-meter" class="bowl-meter" aria-label="Bowling timing meter. Green is perfect and yellow is good." hidden>
+        <div class="meter-track" aria-hidden="true"><span id="meter-good"></span><span id="meter-perfect"></span><i id="meter-marker"></i></div>
+      </div>
       <div class="three-readout">
         <p id="commentary" class="commentary" role="status"></p>
         <span id="shot-timing">Wait for the ball</span>
       </div>
       <div class="bat-controls">
         <div class="shot-controls" role="group" aria-label="Shot direction">
-          <button type="button" data-shot="off" aria-pressed="false">↖ Cover</button>
+          <button type="button" data-shot="off" aria-pressed="false"><span aria-hidden="true">↖</span> <strong id="off-label">Cover</strong></button>
           <button type="button" data-shot="straight" aria-pressed="true">↑ Straight</button>
           <button type="button" data-shot="leg" aria-pressed="false">↗ Leg</button>
         </div>
-        <button id="hit" type="button" class="primary hit" disabled>HIT <kbd>Space</kbd></button>
+        <button id="hit" type="button" class="primary hit" disabled><strong id="action-label">HIT</strong> <kbd>Space</kbd></button>
       </div>
     </div>
   </main>
